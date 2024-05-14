@@ -11,7 +11,7 @@ module.exports = (supabase) => {
     router.get('/list', (req, res) => routeController.list(req, res, supabase));
 
     // Create a new route
-    router.get('/create', (req, res) => routeController.create(req, res, supabase));
+    router.post('/create', (req, res) => routeController.create(req, res, supabase));
 
     return router;
 };

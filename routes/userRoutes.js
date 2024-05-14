@@ -14,7 +14,7 @@ module.exports = (supabase) => {
     router.get('/logout', userController.logout);
 
     // Register an user
-    router.get('/register', (req, res) => userController.register(req, res, supabase));
+    router.post('/register', (req, res) => userController.register(req, res, supabase));
 
     // Login an user
     router.post('/login', (req, res) => userController.login(req, res, supabase));

@@ -1,0 +1,3 @@
+/*
+ * imageRoutes.js
+ */

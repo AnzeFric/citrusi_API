@@ -1,3 +1,34 @@
 /*
  * authMiddleware.js
  */
+ 
+const jwt = require('jsonwebtoken');
+
+// Secret key for JWT
+const secretKey = process.env.JWT_SECRET || 'work hard';
+
+// Middleware function for authentication
+const authMiddleware = (req, res, next) => {
+  // Check if the request path is for authentication or registration
+  if (req.path === '/api/users/login' || req.path === '/api/users/register') {
+    // Allow access to authentication and registration routes
+    next();
+    return;
+  }
+
+  // Check if the session has a userId
+  if (!req.session || !req.session.userId) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Verify the session
+  try {
+    const payload = jwt.verify(req.session.userId, secretKey);
+    req.user = payload;
+    next();
+  } catch (err) {
+    return res.status(403).json({ error: 'Invalid token' });
+  }
+};
+
+module.exports = authMiddleware;

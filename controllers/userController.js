@@ -48,7 +48,6 @@ exports.login = async (req, res, supabase) => {
       .eq('email', email)
       .single();
 
-    console.log(user)
     if (error || !user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -59,8 +58,12 @@ exports.login = async (req, res, supabase) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
+    // Generate token and save it into session
     const token = jwt.sign({ userId: user.id }, "work hard", { expiresIn: '1h' });
     req.session.userId = token;
+
+    // Set the authenticated flag
+    req.isAuthenticated = true;
 
     res.json({ user });
   } catch (error) {

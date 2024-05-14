@@ -12,8 +12,13 @@ const authMiddleware = (req, res, next) => {
   // Check if the request path is for authentication or registration
   if (req.path === '/api/users/login' || req.path === '/api/users/register') {
     // Allow access to authentication and registration routes
-    next();
-    return;
+    return next();
+  }
+
+  // Check if the user is already authenticated
+  if (req.isAuthenticated) {
+    // User is authenticated, allow access
+    return next();
   }
 
   // Check if the session has a userId
@@ -25,7 +30,9 @@ const authMiddleware = (req, res, next) => {
   try {
     const payload = jwt.verify(req.session.userId, secretKey);
     req.user = payload;
-    next();
+    req.isAuthenticated = true; // Set the authenticated flag
+    return next();
+    
   } catch (err) {
     return res.status(403).json({ error: 'Invalid token' });
   }

@@ -71,6 +71,78 @@ exports.login = async (req, res, supabase) => {
   }
 };
 
+exports.loginDesktop = async (req, res, supabase) => {
+  const { username, password } = req.body;
+
+  try {
+    // najdem uporabnika po usernamu
+    const { data: user, error } = await supabase
+      .from('USER')
+      .select('*')
+      .eq('username', username)
+      .single();
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // preverim geslo
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    console.error('Error during desktop login:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
+//mobilni login ima uporabniško ime, geslo in sliko, sliko moramo poslati na zunanji API za 2FA 
+exports.loginMobile = async (req, res, supabase) => {
+  const { username, password, image } = req.body;
+
+  try {
+    // Find user by username
+    const { data: user, error } = await supabase
+      .from('USER')
+      .select('*')
+      .eq('username', username)
+      .single();
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    // preverimo geslo
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    //sliko pošljemo na zunanji API
+    const externalApiResponse = await fetch('API', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: user.id, image: image }),
+    });
+
+    if (!externalApiResponse.ok) {
+      return res.status(externalApiResponse.status).json({ error: await externalApiResponse.text() });
+    }
+
+    const externalApiData = await externalApiResponse.json();
+
+    res.json({ user, externalApiData });
+  } catch (error) {
+    console.error('Napaka med prijavo:', error);
+    res.status(500).json({ error: 'Interna napaka' });
+  }
+};
+
 // User profile
 exports.profile = async (req, res, supabase) => {
   try {

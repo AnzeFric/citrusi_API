@@ -7,7 +7,7 @@ exports.list = async (req, res, supabase) => {
   try {
     // Fetch images from Supabase
     const { data, error } = await supabase
-      .from('IMAGE')
+      .from('IMAGES')
       .select('*');
 
     if (error) {
@@ -24,7 +24,7 @@ exports.list = async (req, res, supabase) => {
 exports.create = async (req, res, supabase) => {
   try {
     const { data, error } = await supabase
-      .from('IMAGE')
+      .from('IMAGES')
       .insert({
         name: req.body.name,
         author: req.body.author,
@@ -72,7 +72,7 @@ exports.update = async (req, res, supabase) => {
     const { id } = req.params;
     const { name, author, src, alt, TK_route } = req.body;
     const { data, error } = await supabase
-      .from('IMAGE')
+      .from('IMAGES')
       .update({ name, author, src, alt, TK_route })
       .eq('id', id);
 

@@ -6,7 +6,7 @@
 exports.list = async (req, res, supabase) => {
     try {
         const { data: route, error } = await supabase
-            .from('ROUTE')
+            .from('ROUTES')
             .select('*');
 
         if (error) {
@@ -36,7 +36,7 @@ exports.create = async (req, res, supabase) => {
     try {
         // Create a new route
         const { data, error: createError } = await supabase
-            .from('ROUTE')
+            .from('ROUTES')
             .insert({
                 name: name,
                 id: null,

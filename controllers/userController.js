@@ -11,7 +11,7 @@ exports.register = async (req, res, supabase) => {
   try {
     // Check if user already exists
     const { data: existingUser, error } = await supabase
-      .from('USER')
+      .from('USERS')
       .select('*')
       .eq('email', email)
       .single();
@@ -22,7 +22,7 @@ exports.register = async (req, res, supabase) => {
 
     // Create a new user
     const { data, error: createError } = await supabase
-      .from('USER')
+      .from('USERS')
       .insert({ username: username, password: bcrypt.hashSync(password, 10), email: email })
       .single();
 
@@ -43,7 +43,7 @@ exports.login = async (req, res, supabase) => {
   try {
     // Find user by email
     const { data: user, error } = await supabase
-      .from('USER')
+      .from('USERS')
       .select('*')
       .eq('email', email)
       .single();
@@ -77,7 +77,7 @@ exports.loginDesktop = async (req, res, supabase) => {
   try {
     // najdem uporabnika po usernamu
     const { data: user, error } = await supabase
-      .from('USER')
+      .from('USERS')
       .select('*')
       .eq('username', username)
       .single();
@@ -106,7 +106,7 @@ exports.loginMobile = async (req, res, supabase) => {
   try {
     // Find user by username
     const { data: user, error } = await supabase
-      .from('USER')
+      .from('USERS')
       .select('*')
       .eq('username', username)
       .single();
@@ -148,7 +148,7 @@ exports.profile = async (req, res, supabase) => {
   try {
     // Find user by id
     const { data: user, error } = await supabase
-      .from('USER')
+      .from('USERS')
       .select('*')
       .eq('id_user', req.body.userId)
       .single();

@@ -30,17 +30,31 @@ exports.list = async (req, res, supabase) => {
 
 // Create new route
 exports.create = async (req, res, supabase) => {
-    const { name, elevation, start_point, end_point, average_time } = req.body;
+    const { name, abstractDescription, distance, duration, durationReverse, 
+        cumulativeElevationGain, cumulativeElevationLoss, coverImage, hasSafetyGear, 
+        hutClosed, dificulty, trailType, startPoint, finishPoint, owner, pois } = req.body;
     try {
         // Create a new route
         const { data, error: createError } = await supabase
             .from('ROUTE')
             .insert({
                 name: name,
-                elevation: elevation,
-                start_point: start_point,
-                end_point: end_point,
-                average_time: average_time,
+                id: null,
+                abstractDescription: abstractDescription,
+                distance: distance,
+                duration: duration,
+                durationReverse: durationReverse,
+                cumulativeElevationGain: cumulativeElevationGain,
+                cumulativeElevationLoss: cumulativeElevationLoss,
+                coverImage: coverImage,
+                hasSafetyGear: hasSafetyGear,
+                hutClosed: hutClosed,
+                dificulty: dificulty,
+                trailType: trailType,
+                startPoint: startPoint,
+                finishPoint: finishPoint,
+                owner: owner,
+                pois: pois
             });
 
         if (createError) {

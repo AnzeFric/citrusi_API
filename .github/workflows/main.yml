@@ -21,8 +21,8 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        docker build -t ${{ secrets.DOCKER_USERNAME }}/citrusi_web:${{ github.sha }} .
-        docker push ${{ secrets.DOCKER_USERNAME }}/citrusi_web:${{ github.sha }}
+        docker build -t ${{ secrets.DOCKER_USERNAME }}/citrusi_api:${{ github.sha }} .
+        docker push ${{ secrets.DOCKER_USERNAME }}/citrusi_api:${{ github.sha }}
 
     - name: Deploy to Server
       uses: appleboy/ssh-action@master

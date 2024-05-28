@@ -4,9 +4,10 @@ WORKDIR /usr/src/app
 
 COPY package*.json ./
 
-RUN apk --no-cache add --virtual builds-deps build-base python
-RUN npm install
-
+RUN apk add --no-cache make gcc g++ python && \
+  npm install && \
+  npm rebuild bcrypt --build-from-source && \
+  apk del make gcc g++ python
 
 COPY . .
 

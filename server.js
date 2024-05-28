@@ -27,7 +27,7 @@ app.use(
 app.use(express.json());
 
 // Public route for testing
-app.get('/api/hello', (req, res) => {
+app.get('/hello', (req, res) => {
   res.status(200).send("Hello, World!");
 });
 
@@ -41,11 +41,11 @@ const statisticRoutes = require('./routes/statisticRoutes');
 const userRoutes = require('./routes/userRoutes');
 const userRouteRoutes = require('./routes/userRouteRoutes');
 
-app.use('/api/images', imageRoutes(supabase));
-app.use('/api/routes', routeRoutes(supabase));
-app.use('/api/statistics', statisticRoutes(supabase));
-app.use('/api/users', userRoutes(supabase));
-app.use('/api/user_routes', userRouteRoutes(supabase));
+app.use('/images', imageRoutes(supabase));
+app.use('/routes', routeRoutes(supabase));
+app.use('/statistics', statisticRoutes(supabase));
+app.use('/users', userRoutes(supabase));
+app.use('/user_routes', userRouteRoutes(supabase));
 
 // Start server
 const PORT = process.env.PORT || 3000;

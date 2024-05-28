@@ -25,6 +25,12 @@ app.use(
 
 // Middleware
 app.use(express.json());
+
+// Public route for testing
+app.get('/api/hello', (req, res) => {
+  res.status(200).send("Hello, World!");
+});
+
 const authMiddleware = require('./middleware/authMiddleware');
 app.use(authMiddleware);
 

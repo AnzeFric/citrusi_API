@@ -71,6 +71,61 @@ exports.login = async (req, res, supabase) => {
   }
 };
 
+// User profile
+exports.profile = async (req, res, supabase) => {
+  try {
+    // Find user by id
+    const { data: user, error } = await supabase
+      .from('USERS')
+      .select('*')
+      .eq('id_user', req.body.userId)
+      .single();
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'User not found' });
+    }
+
+    res.json({ user });
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Logout user
+exports.logout = async (req, res) => {
+  if (req.session) {
+    req.session.destroy(function (error) {
+      if (error) {
+        throw error;
+      } else {
+        return res.redirect('/');
+      }
+    });
+  }
+};
+
+// Sends image to external API for faceID
+exports.sendImage = async (req, res) => {
+  try {
+    // Send image to external API
+    const { data, error } = await fetch('API', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ image: req.body.image }),
+    });
+
+    if (error) {
+      return res.status(401).json({ error: 'Error occured while sending image to API.' });
+    }
+
+    res.json({ data });
+  } catch (error) {
+    res.status(500).json({ error: 'Internal server error' });
+  }
+};
+
 exports.loginDesktop = async (req, res, supabase) => {
   const { username, password } = req.body;
 
@@ -142,36 +197,3 @@ exports.loginMobile = async (req, res, supabase) => {
     res.status(500).json({ error: 'Interna napaka' });
   }
 };
-
-// User profile
-exports.profile = async (req, res, supabase) => {
-  try {
-    // Find user by id
-    const { data: user, error } = await supabase
-      .from('USERS')
-      .select('*')
-      .eq('id_user', req.body.userId)
-      .single();
-
-    if (error || !user) {
-      return res.status(401).json({ error: 'User not found' });
-    }
-
-    res.json({ user });
-  } catch (error) {
-    throw error;
-  }
-};
-
-// Logout user
-exports.logout = async (req, res) => {
-  if (req.session) {
-    req.session.destroy(function (error) {
-      if (error) {
-        throw error;
-      } else {
-        return res.redirect('/');
-      }
-    });
-  }
-}

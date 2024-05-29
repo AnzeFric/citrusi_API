@@ -19,6 +19,9 @@ module.exports = (supabase) => {
     // Login an user
     router.post('/login', (req, res) => userController.login(req, res, supabase));
 
+	// Send image to external api for faceID login
+	router.post('/sendImage', userController.sendImage));
+
     router.post('/loginMobile', (req, res) => userController.loginMobile(req, res, supabase));
     router.post('/loginDesktop', (req, res) => userController.loginDesktop(req, res, supabase));
 

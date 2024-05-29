@@ -34,10 +34,11 @@ exports.create = async (req, res, supabase) => {
       });
 
     if (error) {
-      throw error;
+      console.error('Supabase insertion error:', error);
+      return res.status(400).json({ error: error.message });
     }
 
-    return true;
+    return res.status(201).json({ data });
   } catch (error) {
     throw error;
   }

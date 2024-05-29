@@ -23,7 +23,7 @@ const authMiddleware = (req, res, next) => {
 
   // Check if the session has a userId
   if (!req.session || !req.session.userId) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized', path: req.path });
   }
 
   // Verify the session

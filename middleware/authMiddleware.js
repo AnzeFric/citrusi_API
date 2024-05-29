@@ -1,7 +1,7 @@
 /*
  * authMiddleware.js
  */
- 
+
 const jwt = require('jsonwebtoken');
 
 // Secret key for JWT
@@ -10,7 +10,7 @@ const secretKey = process.env.JWT_SECRET || 'work hard';
 // Middleware function for authentication
 const authMiddleware = (req, res, next) => {
   // Check if the request path is for authentication or registration
-  if (req.path === '/users/login' || req.path === '/users/register') {
+  if (req.path === '/users/login' || req.path === '/users/register' || req.path === 'routes/list') {
     // Allow access to authentication and registration routes
     return next();
   }
@@ -32,7 +32,7 @@ const authMiddleware = (req, res, next) => {
     req.user = payload;
     req.isAuthenticated = true; // Set the authenticated flag
     return next();
-    
+
   } catch (err) {
     return res.status(403).json({ error: 'Invalid token' });
   }

@@ -5,7 +5,7 @@
 // List all routes
 exports.list = async (req, res, supabase) => {
     try {
-        const { data: route, error } = await supabase
+        const { data, error } = await supabase
             .from('ROUTES')
             .select('*');
 
@@ -22,7 +22,7 @@ exports.list = async (req, res, supabase) => {
             throw err;
         }
 
-        res.json({ route });
+        res.json({ data });
     } catch (error) {
         throw error;
     }

@@ -10,7 +10,7 @@ const secretKey = process.env.JWT_SECRET || 'work hard';
 // Middleware function for authentication
 const authMiddleware = (req, res, next) => {
   // Check if the request path is for authentication or registration
-  if (req.path === '/api/users/login' || req.path === '/api/users/register') {
+  if (req.path === '/users/login' || req.path === '/users/register') {
     // Allow access to authentication and registration routes
     return next();
   }
@@ -23,7 +23,7 @@ const authMiddleware = (req, res, next) => {
 
   // Check if the session has a userId
   if (!req.session || !req.session.userId) {
-    return res.status(401).json({ error: 'Unauthorized' });
+    return res.status(401).json({ error: 'Unauthorized', path: req.path });
   }
 
   // Verify the session

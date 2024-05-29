@@ -1,7 +1,7 @@
 /*
  * server.js
  */
- 
+
 const express = require('express');
 const app = express();
 
@@ -25,6 +25,12 @@ app.use(
 
 // Middleware
 app.use(express.json());
+
+// Public route for testing
+app.get('/hello', (req, res) => {
+  res.status(200).send("Hello, World!");
+});
+
 const authMiddleware = require('./middleware/authMiddleware');
 app.use(authMiddleware);
 
@@ -35,14 +41,14 @@ const statisticRoutes = require('./routes/statisticRoutes');
 const userRoutes = require('./routes/userRoutes');
 const userRouteRoutes = require('./routes/userRouteRoutes');
 
-app.use('/api/images', imageRoutes(supabase));
-app.use('/api/routes', routeRoutes(supabase));
-app.use('/api/statistics', statisticRoutes(supabase));
-app.use('/api/users', userRoutes(supabase));
-app.use('/api/user_routes', userRouteRoutes(supabase));
+app.use('/images', imageRoutes(supabase));
+app.use('/routes', routeRoutes(supabase));
+app.use('/statistics', statisticRoutes(supabase));
+app.use('/users', userRoutes(supabase));
+app.use('/user_routes', userRouteRoutes(supabase));
 
 // Start server
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });

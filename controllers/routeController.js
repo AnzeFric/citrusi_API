@@ -30,9 +30,9 @@ exports.list = async (req, res, supabase) => {
 
 // Create new route
 exports.create = async (req, res, supabase) => {
-    const { name, abstractDescription, distance, duration, durationReverse, 
-        cumulativeElevationGain, cumulativeElevationLoss, coverImage, hasSafetyGear, 
-        hutClosed, dificulty, trailType, startPoint, finishPoint, owner, pois } = req.body;
+    const { name, abstractDescription, distance, duration, durationReverse,
+        cumulativeElevationGain, cumulativeElevationLoss, coverImage, hasSafetyGear,
+        hutClosed, dificulty, trailType, startPoint, finishPoint, owner, pois, territory, coordinates } = req.body;
     try {
         // Create a new route
         const { data, error: createError } = await supabase
@@ -54,7 +54,9 @@ exports.create = async (req, res, supabase) => {
                 startPoint: startPoint,
                 finishPoint: finishPoint,
                 owner: owner,
-                pois: pois
+                pois: pois,
+                coordinates: coordinates,
+                territory: territory,
             });
 
         if (createError) {
@@ -64,5 +66,32 @@ exports.create = async (req, res, supabase) => {
         res.json({ "res": true });
     } catch (error) {
         throw error;
+    }
+};
+
+//list paginated
+exports.listPaged = async (req, res, supabase, limit, offset) => {
+    try {
+        const { data: routes, error } = await supabase
+            .from('ROUTES')
+            .select('*')
+            .range(offset, offset + limit - 1);
+
+        if (error) {
+            const err = new Error("Error when getting routes.");
+            err.status = 500;
+            err.message = error.message;
+            throw err;
+        }
+
+        if (routes.length === 0) {
+            const err = new Error("Routes not found.");
+            err.status = 404;
+            throw err;
+        }
+
+        res.json({ routes });
+    } catch (error) {
+        res.status(error.status || 500).json({ error: error.message });
     }
 };

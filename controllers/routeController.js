@@ -16,7 +16,7 @@ exports.list = async (req, res, supabase) => {
             throw err;
         }
 
-        if (data.length === 0) {
+        if (data && data.length === 0) {
             const err = new Error("Routes not found.");
             err.status = 404;
             throw err;
@@ -84,7 +84,7 @@ exports.listPaged = async (req, res, supabase, limit, offset) => {
             throw err;
         }
 
-        if (routes.length === 0) {
+        if (routes && routes.length === 0) {
             const err = new Error("Routes not found.");
             err.status = 404;
             throw err;

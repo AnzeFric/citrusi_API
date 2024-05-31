@@ -3,8 +3,10 @@
  */
 
 const express = require('express');
+const cors = require('cors');
 const app = express();
 
+app.use(cors());
 // Supabase client
 const { createClient } = require('@supabase/supabase-js');
 const supabaseUrl = 'https://cqohcrtvvbaaofvxfcaf.supabase.co';

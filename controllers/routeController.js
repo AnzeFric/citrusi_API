@@ -5,7 +5,7 @@
 // List all routes
 exports.list = async (req, res, supabase) => {
     try {
-        const { data: route, error } = await supabase
+        const { data, error } = await supabase
             .from('ROUTES')
             .select('*');
 
@@ -16,13 +16,13 @@ exports.list = async (req, res, supabase) => {
             throw err;
         }
 
-        if (data.length === 0) {
+        if (data && data.length === 0) {
             const err = new Error("Routes not found.");
             err.status = 404;
             throw err;
         }
 
-        res.json({ route });
+        res.json({ data });
     } catch (error) {
         throw error;
     }
@@ -84,7 +84,7 @@ exports.listPaged = async (req, res, supabase, limit, offset) => {
             throw err;
         }
 
-        if (routes.length === 0) {
+        if (routes && routes.length === 0) {
             const err = new Error("Routes not found.");
             err.status = 404;
             throw err;

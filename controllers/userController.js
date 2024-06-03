@@ -156,14 +156,14 @@ exports.loginDesktop = async (req, res, supabase) => {
 
 //mobilni login ima uporabniško ime, geslo in sliko, sliko moramo poslati na zunanji API za 2FA 
 exports.loginMobile = async (req, res, supabase) => {
-  const { username, password, image } = req.body;
+  const { email, password, image } = req.body;
 
   try {
     // Find user by username
     const { data: user, error } = await supabase
       .from('USERS')
       .select('*')
-      .eq('username', username)
+      .eq('email', email)
       .single();
 
     if (error || !user) {

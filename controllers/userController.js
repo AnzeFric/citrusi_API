@@ -4,6 +4,14 @@
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
+const multer = require('multer');
+let dotenv = require('dotenv').config()
+const FormData = require('form-data');
+const axios = require('axios');
+
+
+
+// Upload image
 
 // Register a new user
 exports.register = async (req, res, supabase) => {
@@ -154,46 +162,72 @@ exports.loginDesktop = async (req, res, supabase) => {
   }
 };
 
+async function streamImageToFlask(file, userId) {
+  const url = `${process.env.FLASK_SERVER}/check-face`;
+  return fetch(url, {
+    method: 'POST',
+    headers: {
+      'X-User-Id': userId,  // Pass the user ID via headers
+    },
+    body: file.stream  // Stream the file directly
+  }).then(response => response.json());
+}
+
 //mobilni login ima uporabniško ime, geslo in sliko, sliko moramo poslati na zunanji API za 2FA 
 exports.loginMobile = async (req, res, supabase) => {
-  const { username, password, image } = req.body;
+  const { email, password } = req.body;
+  if (!req.file) {
+    return res.status(400).send('No image file uploaded');
+  }
+
 
   try {
-    // Find user by username
     const { data: user, error } = await supabase
       .from('USERS')
       .select('*')
-      .eq('username', username)
+      .eq('email', email)
       .single();
 
     if (error || !user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    // preverimo geslo
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password) || password === user.password;
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    //sliko pošljemo na zunanji API
-    const externalApiResponse = await fetch('API', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId: user.id, image: image }),
+
+
+    console.log(process.env.FLASK_SERVER)
+
+    const form = new FormData();
+    form.append('userId', 10);
+    form.append('image', req.file.buffer, {
+      filename: req.file.originalname
     });
 
-    if (!externalApiResponse.ok) {
+    try {
+      const axiosResponse = await axios.post(
+        `${process.env.FLASK_SERVER}/check-face`,
+        form,
+        { headers: { ...form.getHeaders() } }
+      );
+      const responseData = axiosResponse.data;
+      res.send(responseData);
+    } catch (error) {
+      console.error(error);
+      res.status(500).send('Failed to process image');
+    }
+    /*if (!externalApiResponse.ok) {
       return res.status(externalApiResponse.status).json({ error: await externalApiResponse.text() });
     }
 
     const externalApiData = await externalApiResponse.json();
 
-    res.json({ user, externalApiData });
+    res.json({ user, externalApiData });*/
   } catch (error) {
-    console.error('Napaka med prijavo:', error);
-    res.status(500).json({ error: 'Interna napaka' });
+    console.error('Error during login:', error);
+    res.status(500).json({ error: 'Internal error' });
   }
 };

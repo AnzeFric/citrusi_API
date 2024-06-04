@@ -197,7 +197,6 @@ exports.loginMobile = async (req, res, supabase) => {
     return res.status(400).send('No image file uploaded');
   }
 
-
   try {
     const { data: user, error } = await supabase
       .from('USERS')

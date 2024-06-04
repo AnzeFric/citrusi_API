@@ -4,7 +4,6 @@
 
 const bcrypt = require('bcrypt');
 const jwt = require('jsonwebtoken');
-const multer = require('multer');
 let dotenv = require('dotenv').config()
 const FormData = require('form-data');
 const axios = require('axios');
@@ -16,6 +15,8 @@ const axios = require('axios');
 // Register a new user
 exports.register = async (req, res, supabase) => {
   const { email, username, password } = req.body;
+  const videoFiles = req.files;
+  console.log(req.files);
   try {
     // Check if user already exists
     const { data: existingUser, error } = await supabase
@@ -32,10 +33,36 @@ exports.register = async (req, res, supabase) => {
     const { data, error: createError } = await supabase
       .from('USERS')
       .insert({ username: username, password: bcrypt.hashSync(password, 10), email: email })
-      .single();
+      .select();
 
     if (createError) {
       return res.status(500).json({ error: createError.message });
+    }
+    const form = new FormData();
+    if (data && data.length > 0) {
+      const userId = data[0].id_user;
+
+      form.append('userId', userId); // newUser.id is the ID of the user just created
+
+      for (const videoFile of videoFiles) {
+
+        form.append('video', videoFile.buffer, { filename: videoFile.originalname });
+      }
+    }
+    else {
+      return res.status(404).json({ error: "User not created." });
+    }
+    try {
+      const axiosResponse = await axios.post(
+        `${process.env.FLASK_SERVER}/create-model`,
+        form,
+        { headers: { ...form.getHeaders() } }
+      );
+      const responseData = axiosResponse.data;
+      console.log('Video processed:', responseData);
+    } catch (error) {
+      console.error('Failed to process video:', error);
+      // Decide how to handle partial failure
     }
 
     res.json({ "res": true });
@@ -67,7 +94,7 @@ exports.login = async (req, res, supabase) => {
     }
 
     // Generate token and save it into session
-    const token = jwt.sign({ userId: user.id }, "work hard", { expiresIn: '1h' });
+    const token = jwt.sign({ userId: user.id_user }, "work hard", { expiresIn: '1h' });
     req.session.userId = token;
 
     // Set the authenticated flag
@@ -162,16 +189,6 @@ exports.loginDesktop = async (req, res, supabase) => {
   }
 };
 
-async function streamImageToFlask(file, userId) {
-  const url = `${process.env.FLASK_SERVER}/check-face`;
-  return fetch(url, {
-    method: 'POST',
-    headers: {
-      'X-User-Id': userId,  // Pass the user ID via headers
-    },
-    body: file.stream  // Stream the file directly
-  }).then(response => response.json());
-}
 
 //mobilni login ima uporabniško ime, geslo in sliko, sliko moramo poslati na zunanji API za 2FA 
 exports.loginMobile = async (req, res, supabase) => {
@@ -201,7 +218,7 @@ exports.loginMobile = async (req, res, supabase) => {
     console.log(process.env.FLASK_SERVER)
 
     const form = new FormData();
-    form.append('userId', 10);
+    form.append('userId', user.id_user);
     form.append('image', req.file.buffer, {
       filename: req.file.originalname
     });
@@ -221,9 +238,9 @@ exports.loginMobile = async (req, res, supabase) => {
     /*if (!externalApiResponse.ok) {
       return res.status(externalApiResponse.status).json({ error: await externalApiResponse.text() });
     }
-
+ 
     const externalApiData = await externalApiResponse.json();
-
+ 
     res.json({ user, externalApiData });*/
   } catch (error) {
     console.error('Error during login:', error);

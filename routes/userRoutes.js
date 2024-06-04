@@ -17,7 +17,7 @@ module.exports = (supabase) => {
     router.get('/logout', userController.logout);
 
     // Register an user
-    router.post('/register', (req, res) => userController.register(req, res, supabase));
+    router.post('/register', upload.array('videos', 4), (req, res) => userController.register(req, res, supabase));
 
     // Login an user
     router.post('/login', (req, res) => userController.login(req, res, supabase));
@@ -26,6 +26,8 @@ module.exports = (supabase) => {
     router.post('/sendImage', userController.sendImage);
 
     router.post('/loginMobile', upload.single('image'), (req, res) => userController.loginMobile(req, res, supabase));
+
+
     router.post('/loginDesktop', (req, res) => userController.loginDesktop(req, res, supabase));
 
     return router;

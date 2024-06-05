@@ -1,6 +1,8 @@
 /*
  * routeController.js
  */
+const proj4 = require('proj4');
+
 
 // List all routes
 exports.list = async (req, res, supabase) => {
@@ -95,3 +97,71 @@ exports.listPaged = async (req, res, supabase, limit, offset) => {
         res.status(error.status || 500).json({ error: error.message });
     }
 };
+const fromProjection = 'EPSG:3857';
+const toProjection = 'EPSG:4326';
+
+exports.inProximity = async (req, res, supabase) => {
+    const { latitude, longitude, radius, details } = req.query;
+
+    if (!latitude || !longitude || !radius) {
+        return res.status(400).json({ error: "Latitude, longitude, and radius are required parameters." });
+    }
+
+    try {
+        const selectQuery = details === 'true' ? '*' : 'id_route, name, startPoint, finishPoint, distance, duration, dificulty, trailType';
+        const { data: routes, error } = await supabase
+            .from('ROUTES')
+            .select(selectQuery);
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        const filteredRoutes = routes.filter(route => {
+            const routeCoords = parsePointGeometry(route.startPoint.geometry);
+            let convertedCoords = convertCoordinates(routeCoords, fromProjection, toProjection);
+
+            console.log(convertedCoords);
+            const distance = calculateDistance(latitude, longitude, convertedCoords.lat, convertedCoords.lon);
+
+            return distance <= radius;
+        });
+
+        if (filteredRoutes.length === 0) {
+            return res.status(404).json({ message: "No routes found within the specified radius." });
+        }
+
+        res.json({ routes: filteredRoutes });
+    } catch (error) {
+        res.status(error.status || 500).json({ error: error.message });
+    }
+};
+
+const convertCoordinates = (coords, fromProjection, toProjection) => {
+    if (!coords) {
+        return null;
+    }
+    const converted = proj4(fromProjection, toProjection, [coords.lon, coords.lat]);
+    return { lon: converted[0], lat: converted[1] };
+};
+
+
+const parsePointGeometry = (pointString) => {
+    const coords = pointString.match(/POINT \(([^ ]+) ([^ ]+)\)/).slice(1, 3);
+    return {
+        lon: parseFloat(coords[0]),
+        lat: parseFloat(coords[1])
+    };
+};
+
+
+function calculateDistance(lat1, lon1, lat2, lon2) {
+    const R = 6371; // zemljin radius
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
+}

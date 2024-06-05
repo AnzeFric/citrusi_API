@@ -117,15 +117,19 @@ exports.inProximity = async (req, res, supabase) => {
             throw new Error(error.message);
         }
 
-        const filteredRoutes = routes.filter(route => {
+        const filteredRoutes = routes.map(route => {
             const routeCoords = parsePointGeometry(route.startPoint.geometry);
             let convertedCoords = convertCoordinates(routeCoords, fromProjection, toProjection);
 
-            console.log(convertedCoords);
             const distance = calculateDistance(latitude, longitude, convertedCoords.lat, convertedCoords.lon);
 
-            return distance <= radius;
-        });
+            // Add the calculated distance to the route object if within radius
+            if (distance <= parseFloat(radius)) {
+                return { ...route, distanceFromCurrentLocation: distance };
+            } else {
+                return null;
+            }
+        }).filter(route => route !== null);
 
         if (filteredRoutes.length === 0) {
             return res.status(404).json({ message: "No routes found within the specified radius." });
@@ -163,5 +167,5 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
         Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
         Math.sin(dLon / 2) * Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    return R * c;
+    return Math.round(R * c * 1000);
 }

@@ -21,5 +21,7 @@ module.exports = (supabase) => {
     // Create a new route
     router.post('/create', (req, res) => routeController.create(req, res, supabase));
 
+    router.get('/in-proximity', (req, res) => routeController.inProximity(req, res, supabase));
+
     return router;
 };

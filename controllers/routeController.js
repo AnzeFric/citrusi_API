@@ -169,3 +169,30 @@ function calculateDistance(lat1, lon1, lat2, lon2) {
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return Math.round(R * c * 1000);
 }
+
+exports.getSingle = async (req, res, supabase) => {
+    const id = req.query.id;
+
+
+    try {
+        const { data, error } = await supabase
+            .from('ROUTES')
+            .select('*')
+            .eq('id_route', id)
+            .single();
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        if (!data) {
+            const err = new Error("Route not found.");
+            err.status = 404;
+            throw err;
+        }
+
+        res.json(data);
+    } catch (error) {
+        res.status(error.status || 500).json({ error: error.message });
+    }
+};

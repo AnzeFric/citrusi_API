@@ -225,8 +225,8 @@ exports.loginMobile = async (req, res, supabase) => {
        res.status(500).send('Failed to process image');*/
     }
 
-    if (isFaceValid || true) {
-      const { password, id_user, email, name, profileImage } = user;
+    if (isFaceValid) {
+      const { id_user, email, name, profileImage } = user;
 
       const token = jwt.sign({ userId: user.id_user }, "work hard", { expiresIn: '1h' });
       req.session.userId = token;

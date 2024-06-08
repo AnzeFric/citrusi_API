@@ -182,6 +182,19 @@ exports.loginDesktop = async (req, res, supabase) => {
 //mobilni login ima uporabniško ime, geslo in sliko, sliko moramo poslati na zunanji API za 2FA 
 exports.loginMobile = async (req, res, supabase) => {
   const { email, password } = req.body;
+
+  //test sign in
+  if (email == "test" && password == "test") {
+    const token = jwt.sign({ userId: 1 }, "work hard", { expiresIn: '1h' });
+    req.session.userId = token;
+
+    // Set the authenticated flag
+    req.isAuthenticated = true;
+
+    //posljes podatke, ki si jih pol shraniš v session
+    return res.status(200).json({ user: { id: 1, email: "test@test.si", name: "test", profileImage: "image-1717856610023.jpg" }, token: token });
+  }
+
   console.log("login")
   if (!req.file) {
     return res.status(400).send('No image file uploaded');
@@ -236,14 +249,14 @@ exports.loginMobile = async (req, res, supabase) => {
       req.isAuthenticated = true;
 
       //posljes podatke, ki si jih pol shraniš v session
-      res.status(200).json({ user: { id: id_user, email: email, name: name, profileImage: profileImage }, token: token });
+      return res.status(200).json({ user: { id: id_user, email: email, name: name, profileImage: profileImage }, token: token });
     }
     else {
       return res.status(402).json({ error: 'Invalid face' });
     }
   } catch (error) {
     console.error('Error during login:', error);
-    res.status(500).json({ error: 'Internal error' });
+    return res.status(500).json({ error: 'Internal error' });
   }
 };
 

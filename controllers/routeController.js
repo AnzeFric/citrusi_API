@@ -196,3 +196,33 @@ exports.getSingle = async (req, res, supabase) => {
         res.status(error.status || 500).json({ error: error.message });
     }
 };
+
+exports.endRoute = async (req, res, supabase) => {
+
+    const { id_route, id_user, duration, } = req.body;
+    let steps = 69;
+    let hours = Math.floor(duration / 3600);
+    let minutes = Math.floor((duration % 3600) / 60);
+    let seconds = duration % 60;
+    let durationFormatted = `${hours}:${minutes}:${seconds}`;
+
+    try {
+        const { data, error } = await supabase
+            .from('USER_ROUTE')
+            .insert({
+                TK_route: id_route,
+                TK_user: id_user,
+                duration: durationFormatted,
+                steps: steps
+            });
+
+        if (error) {
+            throw new Error(error.message);
+        }
+
+        res.json({ data });
+    } catch (error) {
+        console.log(error);
+        res.status(error.status || 500).json({ error: error.message });
+    }
+}

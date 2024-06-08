@@ -5,6 +5,7 @@
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
+const path = require('path');
 
 if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: '.env.production' });
@@ -16,6 +17,8 @@ if (process.env.NODE_ENV === 'production') {
 const app = express();
 
 app.use(cors());
+
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 // Supabase client
 const { createClient } = require('@supabase/supabase-js');
 const supabaseUrl = 'https://cqohcrtvvbaaofvxfcaf.supabase.co';

@@ -24,5 +24,7 @@ module.exports = (supabase) => {
     router.get('/in-proximity', (req, res) => routeController.inProximity(req, res, supabase));
 
     router.get('/get-route', (req, res) => routeController.getSingle(req, res, supabase));
+
+    router.post('/end-route', (req, res) => routeController.endRoute(req, res, supabase));
     return router;
 };

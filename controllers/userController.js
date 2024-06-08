@@ -10,11 +10,11 @@ const axios = require('axios');
 
 
 
-// Upload image
+
 
 // Register a new user
 exports.register = async (req, res, supabase) => {
-  const { email, username, password } = req.body;
+  const { email, username, password, name } = req.body;
   const videoFiles = req.files;
   console.log(req.files);
   try {
@@ -32,7 +32,7 @@ exports.register = async (req, res, supabase) => {
     // Create a new user
     const { data, error: createError } = await supabase
       .from('USERS')
-      .insert({ username: username, password: bcrypt.hashSync(password, 10), email: email })
+      .insert({ username: username, password: bcrypt.hashSync(password, 10), email: email, name: name })
       .select();
 
     if (createError) {
@@ -94,9 +94,10 @@ exports.login = async (req, res, supabase) => {
     }
 
     // Generate token and save it into session
-    const token = jwt.sign({ userId: user.id_user }, "work hard", { expiresIn: '1h' });
-    req.session.userId = token;
+    // const token = jwt.sign({ userId: user.id_user }, "work hard", { expiresIn: '1h' });
+    //req.session.userId = token;
 
+    req.session.userId = user.id_user
     // Set the authenticated flag
     req.isAuthenticated = true;
 
@@ -128,42 +129,21 @@ exports.profile = async (req, res, supabase) => {
 
 // Logout user
 exports.logout = async (req, res) => {
+  console.log('Logging out')
   if (req.session) {
     req.session.destroy(function (error) {
       if (error) {
         throw error;
       } else {
-        return res.redirect('/');
+        return res.status(201).json({});
       }
     });
   }
 };
 
-// Sends image to external API for faceID
-exports.sendImage = async (req, res) => {
-  try {
-    // Send image to external API
-    const { data, error } = await fetch('API', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ image: req.body.image }),
-    });
-
-    if (error) {
-      return res.status(401).json({ error: 'Error occured while sending image to API.' });
-    }
-
-    res.json({ data });
-  } catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
-  }
-};
-
 exports.loginDesktop = async (req, res, supabase) => {
-  const { username, password } = req.body;
-
+  const { username, password } = req.body.data;
+  console.log(username, password);
   try {
     // najdem uporabnika po usernamu
     const { data: user, error } = await supabase
@@ -182,7 +162,16 @@ exports.loginDesktop = async (req, res, supabase) => {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
 
-    res.json({ user });
+
+    const { password: _, ...userInfo } = user;
+
+    const token = jwt.sign({ userId: user.id_user }, "work hard", { expiresIn: '1h' });
+    req.session.userId = token;
+
+    // Set the authenticated flag
+    req.isAuthenticated = true;
+
+    res.json({ user: userInfo });
   } catch (error) {
     console.error('Error during desktop login:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -209,13 +198,10 @@ exports.loginMobile = async (req, res, supabase) => {
     }
 
     const isPasswordValid = await bcrypt.compare(password, user.password) || password === user.password;
+
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
-
-
-    console.log(process.env.FLASK_SERVER)
 
     const form = new FormData();
     form.append('userId', user.id_user);
@@ -223,27 +209,75 @@ exports.loginMobile = async (req, res, supabase) => {
       filename: req.file.originalname
     });
 
+    let isFaceValid = false;
+
     try {
       const axiosResponse = await axios.post(
         `${process.env.FLASK_SERVER}/check-face`,
         form,
         { headers: { ...form.getHeaders() } }
       );
-      const responseData = axiosResponse.data;
-      res.send(responseData);
+
+      isFaceValid = axiosResponse.status === 200;
     } catch (error) {
-      console.error(error);
-      res.status(500).send('Failed to process image');
+
+      /* console.error(error);
+       res.status(500).send('Failed to process image');*/
     }
-    /*if (!externalApiResponse.ok) {
-      return res.status(externalApiResponse.status).json({ error: await externalApiResponse.text() });
+
+    if (isFaceValid || true) {
+      const { password, id_user, email, name, profileImage } = user;
+
+      const token = jwt.sign({ userId: user.id_user }, "work hard", { expiresIn: '1h' });
+      req.session.userId = token;
+
+      // Set the authenticated flag
+      req.isAuthenticated = true;
+
+      //posljes podatke, ki si jih pol shraniš v session
+      res.status(200).json({ user: { id: id_user, email: email, name: name, profileImage: profileImage }, token: token });
     }
- 
-    const externalApiData = await externalApiResponse.json();
- 
-    res.json({ user, externalApiData });*/
+    else {
+      return res.status(401).json({ error: 'Invalid face' });
+    }
   } catch (error) {
     console.error('Error during login:', error);
+    res.status(500).json({ error: 'Internal error' });
+  }
+};
+
+
+
+exports.uploadProfileImage = async (req, res, supabase) => {
+  console.log("incoming file", req.file);
+  if (!req.file) {
+    return res.status(400).send('No file uploaded');
+  }
+
+  const userId = req.body.userId; // Assuming the user ID is sent in the request body.
+  if (!userId) {
+    return res.status(400).send('User ID is missing');
+  }
+
+  try {
+    // Update the user's profile image entry in the database
+    const { error } = await supabase
+      .from('USERS')
+      .update({ profileImage: req.file.filename })
+      .eq('id_user', userId);
+
+    if (error) {
+      console.error('Failed to update user profile image:', error);
+      return res.status(500).json({ error: 'Database update failed' });
+    }
+
+    // Respond to the client after successful update
+    res.status(200).json({
+      message: 'File uploaded and profile image updated successfully',
+      file: req.file.filename
+    });
+  } catch (error) {
+    console.error('Error during image upload:', error);
     res.status(500).json({ error: 'Internal error' });
   }
 };

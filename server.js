@@ -6,6 +6,8 @@ const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
 const path = require('path');
+const SSE = require('express-sse');
+const compression = require('compression');
 
 if (process.env.NODE_ENV === 'production') {
   dotenv.config({ path: '.env.production' });
@@ -39,6 +41,19 @@ app.use(
 
 // Middleware
 app.use(express.json());
+
+//SSE setup
+const sse = new SSE();
+app.use(compression());
+
+app.get('/notifications', (req, res) => {
+  sse.init(req, res);
+});
+
+function sendNotification(notification) {
+  sse.send(notification);
+}
+
 
 // Public route for testing
 app.get('/hello', (req, res) => {

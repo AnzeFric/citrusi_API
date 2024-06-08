@@ -7,6 +7,7 @@ const jwt = require('jsonwebtoken');
 let dotenv = require('dotenv').config()
 const FormData = require('form-data');
 const axios = require('axios');
+const { sendNotification } = require('../server.js');
 
 
 
@@ -181,6 +182,9 @@ exports.loginDesktop = async (req, res, supabase) => {
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
+
+    // Send SSE notification upon successful login
+    sendNotification({ open: 'Desktop login successful!' });
 
     res.json({ user });
   } catch (error) {

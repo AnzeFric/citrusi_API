@@ -44,5 +44,9 @@ module.exports = (supabase) => {
 
     router.post('/loginDesktop', (req, res) => userController.loginDesktop(req, res, supabase));
 
+    router.post('/verified-login', (req, res) => userController.verifiedLogin(req, res, supabase));
+
+
+    router.post('/confirm2fa', uploadM.single('image'), (req, res) => userController.confirm2fa(req, res, supabase));
     return router;
 };

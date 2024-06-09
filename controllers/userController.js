@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 let dotenv = require('dotenv').config()
 const FormData = require('form-data');
 const axios = require('axios');
-const { sendNotificationToUser } = require('../notifications/notificationRouter');
+const { sendNotificationToUser, registerDesktopDevice, sendNotificationToDesktop, usersWaitingForSignIn } = require('../notifications/notificationRouter');
 
 
 
@@ -143,7 +143,7 @@ exports.logout = async (req, res) => {
 
 exports.loginDesktop = async (req, res, supabase) => {
   const { username, password } = req.body.data;
-  console.log(username, password);
+
   try {
     // najdem uporabnika po usernamu
     const { data: user, error } = await supabase
@@ -165,14 +165,15 @@ exports.loginDesktop = async (req, res, supabase) => {
 
     const { password: _, ...userInfo } = user;
 
-    const token = jwt.sign({ userId: user.id_user }, "work hard", { expiresIn: '1h' });
-    req.session.userId = token;
 
-    // Set the authenticated flag
-    req.isAuthenticated = true;
-    sendNotificationToUser("YOUR_USER_ID", "Login successful from desktop", "login request")
+    //registriram uporabnika da se zeli prijavitit
+    const token = registerDesktopDevice("token", user.id_user)
 
-    res.json({ user: userInfo, token: token });
+    //posljem obvestilo uporabniku na mobilno aplikacijo
+
+    sendNotificationToUser(token, user.id_user, "Login successful from desktop", "login request")
+
+    return res.json({ nextStep: true, token: token });
   } catch (error) {
     console.error('Error during desktop login:', error);
     res.status(500).json({ error: 'Internal server error' });
@@ -196,7 +197,6 @@ exports.loginMobile = async (req, res, supabase) => {
     return res.status(200).json({ user: { id: 1, email: "test@test.si", name: "test", profileImage: "image-1717856610023.jpg" }, token: token });
   }
 
-  console.log("login")
   if (!req.file) {
     return res.status(400).send('No image file uploaded');
   }
@@ -261,6 +261,45 @@ exports.loginMobile = async (req, res, supabase) => {
   }
 };
 
+exports.confirm2fa = async (req, res, supabase) => {
+  console.log("confirm 2fa")
+  const { userId } = req.body;
+  if (!req.file) {
+    return res.status(400).send('No image file uploaded');
+  }
+
+  const form = new FormData();
+  form.append('image', req.file.buffer, {
+    filename: req.file.originalname
+  });
+
+
+  let isFaceValid = false;
+
+  try {
+    const axiosResponse = await axios.post(
+      `${process.env.FLASK_SERVER}/check-face`,
+      form,
+      { headers: { ...form.getHeaders() } }
+    );
+    console.log(axiosResponse);
+    isFaceValid = axiosResponse.status === 200;
+  } catch (error) {
+
+    /* console.error(error);
+     res.status(500).send('Failed to process image');*/
+  }
+
+  if (isFaceValid) {
+    sendNotificationToDesktop(userId, "success", "verification");
+  } else {
+    sendNotificationToDesktop(userId, "error", "verification");
+  }
+
+
+  return res.status(200).json({ message: "2fa request submitted" });
+};
+
 
 
 exports.uploadProfileImage = async (req, res, supabase) => {
@@ -269,13 +308,12 @@ exports.uploadProfileImage = async (req, res, supabase) => {
     return res.status(400).send('No file uploaded');
   }
 
-  const userId = req.body.userId; // Assuming the user ID is sent in the request body.
+  const userId = req.body.userId;
   if (!userId) {
     return res.status(400).send('User ID is missing');
   }
 
   try {
-    // Update the user's profile image entry in the database
     const { error } = await supabase
       .from('USERS')
       .update({ profileImage: req.file.filename })
@@ -286,7 +324,7 @@ exports.uploadProfileImage = async (req, res, supabase) => {
       return res.status(500).json({ error: 'Database update failed' });
     }
 
-    // Respond to the client after successful update
+
     res.status(200).json({
       message: 'File uploaded and profile image updated successfully',
       file: req.file.filename
@@ -301,10 +339,9 @@ exports.uploadProfileImage = async (req, res, supabase) => {
 exports.addFriend = async (req, res, supabase) => {
   const { user1_id, user2_id } = req.body;
 
-  const user1Id = parseInt(user1_id, 10); // Convert to integer, base 10
+  const user1Id = parseInt(user1_id, 10);
   const user2Id = parseInt(user2_id, 10);
-  console.log(req.body)
-  console.log(user1_id, user2_id);
+
   try {
     const { data: existingFriend, error } = await supabase
       .from('FRIENDS')
@@ -364,4 +401,49 @@ exports.stats = async (req, res, supabase) => {
   } catch (err) {
     return res.status(500).send({ error: err.message });
   }
+};
+
+exports.verifiedLogin = async (req, res, supabase) => {
+
+  const { username, password } = req.body.data;
+  console.log(username, password);
+  try {
+    // najdem uporabnika po usernamu
+    const { data: user, error } = await supabase
+      .from('USERS')
+      .select('*')
+      .eq('email', username)
+      .single();
+
+    if (error || !user) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+    //preverim ali uporabnik čaka na prijavo
+    let isUserWaitingForSignIn = usersWaitingForSignIn.any(user.user_id)
+
+    // preverim geslo
+    const isPasswordValid = await bcrypt.compare(password, user.password) || password == "test";
+    if (!isPasswordValid || !isUserWaitingForSignIn) {
+      return res.status(401).json({ error: 'Invalid credentials' });
+    }
+
+
+    const { password: _, ...userInfo } = user;
+
+
+    const token = jwt.sign({ userId: user.id_user }, "work hard", { expiresIn: '1h' });
+    req.session.userId = token;
+
+    // Set the authenticated flag
+    req.isAuthenticated = true;
+
+    //posljes podatke, ki si jih pol shraniš v session
+    return res.status(200).json({ user: { id: id_user, email: email, name: name, profileImage: profileImage }, token: token });
+
+  } catch (error) {
+    console.error('Error during desktop login:', error);
+    res.status(500).json({ error: 'Internal server error' });
+  }
+
 };

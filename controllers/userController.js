@@ -269,6 +269,7 @@ exports.confirm2fa = async (req, res, supabase) => {
   }
 
   const form = new FormData();
+  form.append('userId', userId);
   form.append('image', req.file.buffer, {
     filename: req.file.originalname
   });
@@ -292,6 +293,7 @@ exports.confirm2fa = async (req, res, supabase) => {
 
   if (isFaceValid) {
     sendNotificationToDesktop(userId, "success", "verification");
+    return res.status(200).json({ message: "2fa request confirmed" });
   } else {
     sendNotificationToDesktop(userId, "error", "verification");
   }
@@ -418,10 +420,12 @@ exports.verifiedLogin = async (req, res, supabase) => {
     if (error || !user) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
-
+    console.log(user.id_user)
+    console.log(usersWaitingForSignIn)
+    let userId = user.id_user;
     //preverim ali uporabnik čaka na prijavo
-    let isUserWaitingForSignIn = usersWaitingForSignIn.any(user.user_id)
-
+    let isUserWaitingForSignIn = usersWaitingForSignIn.includes(userId.toString());
+    console.log("includes" + isUserWaitingForSignIn)
     // preverim geslo
     const isPasswordValid = await bcrypt.compare(password, user.password) || password == "test";
     if (!isPasswordValid || !isUserWaitingForSignIn) {
@@ -432,14 +436,14 @@ exports.verifiedLogin = async (req, res, supabase) => {
     const { password: _, ...userInfo } = user;
 
 
-    const token = jwt.sign({ userId: user.id_user }, "work hard", { expiresIn: '1h' });
+    const token = jwt.sign({ userId: userId }, "work hard", { expiresIn: '1h' });
     req.session.userId = token;
 
     // Set the authenticated flag
     req.isAuthenticated = true;
 
     //posljes podatke, ki si jih pol shraniš v session
-    return res.status(200).json({ user: { id: id_user, email: email, name: name, profileImage: profileImage }, token: token });
+    return res.status(200).json({ user: { id: userId, email: user.email, name: user.name, profileImage: user.profileImage }, token: token });
 
   } catch (error) {
     console.error('Error during desktop login:', error);

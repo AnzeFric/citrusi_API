@@ -16,6 +16,7 @@ const authMiddleware = (req, res, next) => {
     || req.path === '/routes/list-paginated' || req.path === '/routes/in-proximity'
     || req.path.startsWith('/uploads/') || req.path.startsWith('/notifications/')
     || req.path.startsWith('/users/stats') || req.path.startsWith('/users/friends')
+    || req.path.startsWith('/users/verified-login')
     || req.path.startsWith('/users/add-friend') || req.path.startsWith('/users/confirm2fa')
     || req.path === '/routes/get-route') {
     // Allow access to authentication and registration routes

@@ -25,6 +25,13 @@ module.exports = (supabase) => {
     // Logout an user
     router.get('/logout', userController.logout);
 
+    router.get('/friends', (req, res) => userController.friends(req, res, supabase));
+
+    router.get('/stats', (req, res) => userController.stats(req, res, supabase));
+
+    router.post('/add-friend', (req, res) => userController.addFriend(req, res, supabase));
+
+
     // Register an user
     router.post('/register', uploadM.array('video', 4), (req, res) => userController.register(req, res, supabase));
 

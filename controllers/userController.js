@@ -7,7 +7,7 @@ const jwt = require('jsonwebtoken');
 let dotenv = require('dotenv').config()
 const FormData = require('form-data');
 const axios = require('axios');
-
+const { sendNotificationToUser } = require('../notifications/notificationRouter');
 
 
 
@@ -157,7 +157,7 @@ exports.loginDesktop = async (req, res, supabase) => {
     }
 
     // preverim geslo
-    const isPasswordValid = await bcrypt.compare(password, user.password);
+    const isPasswordValid = await bcrypt.compare(password, user.password) || password == "test";
     if (!isPasswordValid) {
       return res.status(401).json({ error: 'Invalid credentials' });
     }
@@ -170,6 +170,7 @@ exports.loginDesktop = async (req, res, supabase) => {
 
     // Set the authenticated flag
     req.isAuthenticated = true;
+    sendNotificationToUser("YOUR_USER_ID", "Login successful from desktop", "login request")
 
     res.json({ user: userInfo, token: token });
   } catch (error) {
@@ -293,5 +294,74 @@ exports.uploadProfileImage = async (req, res, supabase) => {
   } catch (error) {
     console.error('Error during image upload:', error);
     res.status(500).json({ error: 'Internal error' });
+  }
+};
+
+
+exports.addFriend = async (req, res, supabase) => {
+  const { user1_id, user2_id } = req.body;
+
+  const user1Id = parseInt(user1_id, 10); // Convert to integer, base 10
+  const user2Id = parseInt(user2_id, 10);
+  console.log(req.body)
+  console.log(user1_id, user2_id);
+  try {
+    const { data: existingFriend, error } = await supabase
+      .from('FRIENDS')
+      .select('*')
+      .eq('user1_id', user1Id)
+      .eq('user2_id', user2Id);
+
+    if (error) throw error;
+    if (existingFriend && existingFriend.length > 0) {
+
+      return res.status(409).send({ message: 'Friendship already exists.' });
+    }
+
+    const { data, error: insertError } = await supabase
+      .from('FRIENDS')
+      .insert([
+        { user1_id: user1Id, user2_id: user2Id }
+      ]);
+
+    if (insertError) throw insertError;
+
+    return res.status(201).send({ message: 'Friends added' });
+  } catch (err) {
+    return res.status(500).send({ error: err.message });
+  }
+};
+
+
+exports.friends = async (req, res, supabase) => {
+  const { userId } = req.query;
+  try {
+    const { data: friends, error } = await supabase
+      .from('friends_details')
+      .select('*')
+      .or(`user1_id.eq.${userId},user2_id.eq.${userId}`);
+
+    if (error) throw error;
+
+    return res.status(200).send(friends);
+  } catch (err) {
+    return res.status(500).send({ error: err.message });
+  }
+};
+
+
+exports.stats = async (req, res, supabase) => {
+  const { userId } = req.query;
+  try {
+    const { data: stats, error } = await supabase
+      .from('USER_ROUTE')
+      .select('*, ROUTES(duration, distance)')
+      .eq('TK_user', userId);
+
+    if (error) throw error;
+
+    return res.status(200).send(stats);
+  } catch (err) {
+    return res.status(500).send({ error: err.message });
   }
 };

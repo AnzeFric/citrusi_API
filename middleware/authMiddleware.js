@@ -12,9 +12,11 @@ const authMiddleware = (req, res, next) => {
   // Check if the request path is for authentication or registration
   if (req.path === '/users/login' || req.path === '/users/register'
     || req.path === '/users/loginMobile' || req.path === '/routes/list'
-    || req.path === '/users/loginDesktop' || req.path === '/users/logout'
+    || req.path.startsWith('/users/loginDesktop') || req.path === '/users/logout'
     || req.path === '/routes/list-paginated' || req.path === '/routes/in-proximity'
-    || req.path.startsWith('/uploads/')
+    || req.path.startsWith('/uploads/') || req.path.startsWith('/notifications/')
+    || req.path.startsWith('/users/stats') || req.path.startsWith('/users/friends')
+    || req.path.startsWith('/users/add-friend')
     || req.path === '/routes/get-route') {
     // Allow access to authentication and registration routes
     return next();

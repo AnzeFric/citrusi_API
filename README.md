@@ -10,7 +10,7 @@ To get started with the API, follow these steps:
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/AnzeFric/citrusi_API.git
-   cd your-repo
+   cd citrusi_API
 
 ## Contributing
 

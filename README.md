@@ -10,7 +10,14 @@ To get started with the API, follow these steps:
 1. **Clone the repository**:
    ```bash
    git clone https://github.com/AnzeFric/citrusi_API.git
+
+2. **Go into directory**:
+   ```bash
    cd citrusi_API
+
+3. **Start server**:
+   ```bash
+   node server.js
 
 ## Contributing
 

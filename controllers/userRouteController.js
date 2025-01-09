@@ -145,12 +145,13 @@ function limitNumsTo255(arr) {
 
 // Get and process input data from gyro and send it to database
 exports.sendGyroDataToApi = async (req, res, supabase) => {
-  // TODO: Get data from param
+  // TODO: Make route keep collecting data for 1-5min and then running the function
+  const { userRouteId, data } = req.body;
 
   let positiveArr = [];
   let negativeArr = [];
 
-  gyroTestData.forEach((num) => {
+  data.forEach((num) => {
     if (num >= 0) {
       positiveArr.push(num);
     } else {
@@ -173,7 +174,7 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
     const { data: data, error } = await supabase
       .from("USER_ROUTE")
       .select("gyro_data")
-      .eq("id_user_route", 1)
+      .eq("id_user_route", userRouteId)
       .single();
 
     if (error) {
@@ -213,7 +214,7 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
           compressedNegative: String(compressedNegative),
         },
       })
-      .eq("id_user_route", 1);
+      .eq("id_user_route", userRouteId);
 
     if (updateError) {
       return res.status(500).json({ error: "Error updating data" });
@@ -231,9 +232,40 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
 
 // Get data from compressed data from database, decompress it and send to user
 exports.getGyroDataFromApi = async (req, res, supabase) => {
-  // Get data from supabase
-  // Decompress data(2 arr: positive and negative)
-  //const decompressedPositive = Decompress.decompress(compressedPositive);
-  //const decompressedNegative = Decompress.decompress(compressedNegative);
-  // Return json res with data
+  const userRouteId = req.params.id;
+  try {
+    // Fetch data from supabase
+    const { data: data, error } = await supabase
+      .from("USER_ROUTE")
+      .select("gyro_data")
+      .eq("id_user_route", userRouteId)
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: "Error fetching data" });
+    }
+
+    if (!data) {
+      return res.status(404).json({ error: "Data not found" });
+    }
+
+    // Decompress data from supabase
+    var decompressedPositive = Decompress.decompress(
+      data.gyro_data.compressedPositive
+    );
+    var decompressedNegative = Decompress.decompress(
+      data.gyro_data.compressedNegative
+    );
+
+    // Return arrays with data
+    return res.status(200).json({
+      message: "Data retrieved successfully",
+      data: {
+        positiveArr: decompressedPositive,
+        negativeArr: decompressedNegative,
+      },
+    });
+  } catch (error) {
+    throw error;
+  }
 };

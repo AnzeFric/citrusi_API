@@ -31,7 +31,7 @@ module.exports = (supabase) => {
   );
 
   // Get data from database
-  router.get("/getGyroDataFromApi", (req, res) =>
+  router.get("/getGyroDataFromApi/:id", (req, res) =>
     userRouteController.getGyroDataFromApi(req, res, supabase)
   );
 

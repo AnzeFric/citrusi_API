@@ -143,11 +143,8 @@ function limitNumsTo255(arr) {
   }
 }
 
-// Get data from database
-function fetchData() {}
-
 // Get and process input data from gyro and send it to database
-exports.sendGyroDataToApi = async (req, res) => {
+exports.sendGyroDataToApi = async (req, res, supabase) => {
   // TODO: Get data from param
 
   let positiveArr = [];
@@ -171,39 +168,72 @@ exports.sendGyroDataToApi = async (req, res) => {
   limitNumsTo255(positiveArr);
   limitNumsTo255(negativeArr);
 
-  /*console.log("pos");
-  console.dir(positiveArr, { maxArrayLength: null });
+  try {
+    // Fetch data from supabase
+    const { data: data, error } = await supabase
+      .from("USER_ROUTE")
+      .select("gyro_data")
+      .eq("id_user_route", 1)
+      .single();
 
-  console.log("neg");
-  console.dir(negativeArr, { maxArrayLength: null });*/
+    if (error) {
+      return res.status(500).json({ error: "Error fetching data" });
+    }
 
-  // Fetch data from supabase
+    if (!data) {
+      return res.status(404).json({ error: "Data not found" });
+    }
 
-  // Decompress data from supabase (2 arr)
+    // Decompress data from supabase
+    var decompressedPositive = Decompress.decompress(
+      data.gyro_data.compressedPositive
+    );
+    var decompressedNegative = Decompress.decompress(
+      data.gyro_data.compressedNegative
+    );
+  } catch (error) {
+    throw error;
+  }
 
   // Append new data (positiveArr and negativeArr) to fetched
+  decompressedPositive.push(...positiveArr);
+  decompressedNegative.push(...negativeArr);
 
-  // Compress (2 arr)
+  // Compress back
+  const compressedPositive = Compress.compress(decompressedPositive);
+  const compressedNegative = Compress.compress(decompressedNegative);
 
-  //const compressedPositive = Compress.compress(positiveArr);
-  //const compressedNegative = Compress.compress(negativeArr);
+  // Update the USER_ROUTE table with the new compressed data
+  try {
+    const { data: updateData, error: updateError } = await supabase
+      .from("USER_ROUTE")
+      .update({
+        gyro_data: {
+          compressedPositive: String(compressedPositive),
+          compressedNegative: String(compressedNegative),
+        },
+      })
+      .eq("id_user_route", 1);
 
-  // Send and overwrite data in supabase (2 arr)
+    if (updateError) {
+      return res.status(500).json({ error: "Error updating data" });
+    }
 
-  return res.status(201);
+    return res
+      .status(200)
+      .json({ message: "Data updated successfully", updateData });
+  } catch (error) {
+    return res
+      .status(500)
+      .json({ error: "An error occurred during the update process" });
+  }
 };
 
 // Get data from compressed data from database, decompress it and send to user
-exports.getGyroDataFromApi = async (req, res) => {
+exports.getGyroDataFromApi = async (req, res, supabase) => {
   // Get data from supabase
   // Decompress data(2 arr: positive and negative)
   //const decompressedPositive = Decompress.decompress(compressedPositive);
   //const decompressedNegative = Decompress.decompress(compressedNegative);
   // Return json res with data
-};
-
-// Get data from gyro and forward it for real time display on web
-exports.sendGyroDataToWeb = async (req, res) => {
-  // Get data from param
-  // Send pure data in json res 201 without processing to web for real time display if successful else 500
 };

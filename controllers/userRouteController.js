@@ -230,7 +230,7 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
   }
 };
 
-// Get data from compressed data from database, decompress it and send to user
+// Get compressed data from database, decompress it and send to user
 exports.getGyroDataFromApi = async (req, res, supabase) => {
   const userRouteId = req.params.id;
   try {

@@ -143,11 +143,36 @@ function limitNumsTo255(arr) {
   }
 }
 
+const dataBuffers = new Map(); // Map to store buffers for different routes
+const COLLECTION_TIME = 3 * 60 * 1000; // 3 minutes in milliseconds
+
 // Get and process input data from gyro and send it to database
 exports.sendGyroDataToApi = async (req, res, supabase) => {
-  // TODO: Make route keep collecting data for 1-5min and then running the function
   const { userRouteId, data } = req.body;
 
+  // Initialize buffer for this route if it doesn't exist
+  if (!dataBuffers.has(userRouteId)) {
+    dataBuffers.set(userRouteId, {
+      buffer: [],
+      timer: setTimeout(async () => {
+        // Process data after 3 minutes
+        const bufferedData = dataBuffers.get(userRouteId).buffer;
+        await processAndSaveData(bufferedData, userRouteId, supabase);
+        // Clear the buffer
+        dataBuffers.delete(userRouteId);
+      }, COLLECTION_TIME),
+    });
+  }
+
+  // Add new data to buffer
+  dataBuffers.get(userRouteId).buffer.push(...data);
+
+  // Send immediate response that data was received
+  return res.status(200).json({ message: "Data received and buffering" });
+};
+
+// Help function to process and save the data
+async function processAndSaveData(data, userRouteId, supabase) {
   let positiveArr = [];
   let negativeArr = [];
 
@@ -170,43 +195,36 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
   limitNumsTo255(negativeArr);
 
   try {
-    // Fetch data from supabase
-    const { data: data, error } = await supabase
+    // Fetch existing data from supabase
+    const { data: existingData, error } = await supabase
       .from("USER_ROUTE")
       .select("gyro_data")
       .eq("id_user_route", userRouteId)
       .single();
 
     if (error) {
-      return res.status(500).json({ error: "Error fetching data" });
+      console.error("Error fetching data:", error);
+      return;
     }
 
-    if (!data) {
-      return res.status(404).json({ error: "Data not found" });
-    }
+    // Decompress existing data
+    const decompressedPositive = existingData
+      ? Decompress.decompress(existingData.gyro_data.compressedPositive)
+      : [];
+    const decompressedNegative = existingData
+      ? Decompress.decompress(existingData.gyro_data.compressedNegative)
+      : [];
 
-    // Decompress data from supabase
-    var decompressedPositive = Decompress.decompress(
-      data.gyro_data.compressedPositive
-    );
-    var decompressedNegative = Decompress.decompress(
-      data.gyro_data.compressedNegative
-    );
-  } catch (error) {
-    throw error;
-  }
+    // Append new data
+    decompressedPositive.push(...positiveArr);
+    decompressedNegative.push(...negativeArr);
 
-  // Append new data (positiveArr and negativeArr) to fetched
-  decompressedPositive.push(...positiveArr);
-  decompressedNegative.push(...negativeArr);
+    // Compress
+    const compressedPositive = Compress.compress(decompressedPositive);
+    const compressedNegative = Compress.compress(decompressedNegative);
 
-  // Compress back
-  const compressedPositive = Compress.compress(decompressedPositive);
-  const compressedNegative = Compress.compress(decompressedNegative);
-
-  // Update the USER_ROUTE table with the new compressed data
-  try {
-    const { data: updateData, error: updateError } = await supabase
+    // Update database
+    const { error: updateError } = await supabase
       .from("USER_ROUTE")
       .update({
         gyro_data: {
@@ -217,18 +235,12 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
       .eq("id_user_route", userRouteId);
 
     if (updateError) {
-      return res.status(500).json({ error: "Error updating data" });
+      console.error("Error updating data:", updateError);
     }
-
-    return res
-      .status(200)
-      .json({ message: "Data updated successfully", updateData });
   } catch (error) {
-    return res
-      .status(500)
-      .json({ error: "An error occurred during the update process" });
+    console.error("Processing error:", error);
   }
-};
+}
 
 // Get compressed data from database, decompress it and send to user
 exports.getGyroDataFromApi = async (req, res, supabase) => {

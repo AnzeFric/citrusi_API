@@ -143,9 +143,6 @@ function limitNumsTo255(arr) {
   }
 }
 
-// Compress data from param
-function compress(arr) {}
-
 // Get data from database
 function fetchData() {}
 
@@ -195,9 +192,6 @@ exports.sendGyroDataToApi = async (req, res) => {
 
   return res.status(201);
 };
-
-// Decompress data from param
-function decompress(data) {}
 
 // Get data from compressed data from database, decompress it and send to user
 exports.getGyroDataFromApi = async (req, res) => {

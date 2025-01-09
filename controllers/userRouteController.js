@@ -95,7 +95,7 @@ exports.create = async (req, res, supabase) => {
   }
 };
 
-const gyro_test_data = [
+const gyroTestData = [
   0.367, 0.21, 0.139, 0.21, -0.141, 1.54, 0.087, 0.07, -0.088, -0.298, -0.158,
   -0.176, -0.035, -0.053, -0.28, -0.158, -0.228, 0.105, -0.21, 0.017, -0.088,
   -0.088, 0.297, 0.035, -0.123, 0.035, 0.0, 0.105, 11.2, -9.643, -2.03, 6.772,
@@ -126,3 +126,76 @@ const gyro_test_data = [
   -0.42, 0.157, -0.018, -4.778, -0.298, 0.0, 0.122, -0.351, 0.035, -0.105,
   -0.035, -0.053, 0.017, 0.297, 0.419, -0.246, -0.525, 2.082, 0.157, 0.28,
 ];
+
+function roundNumsInArr(arr) {
+  for (let i = 0; i < arr.length; i++) {
+    arr[i] = Math.round(arr[i]);
+  }
+}
+
+function limitNumsTo255(arr) {
+  for (let i = 0; i < arr.length; i++) {
+    if (arr[i] > 255) {
+      arr[i] = 255;
+    }
+  }
+}
+
+// Get and process input data from gyro
+exports.sendGyroDataToApi = async (req, res) => {
+  // TODO: Get data from param
+
+  let positiveArr = [];
+  let negativeArr = [];
+
+  gyroTestData.forEach((num) => {
+    if (num >= 0) {
+      positiveArr.push(num);
+    } else {
+      negativeArr.push(num);
+    }
+  });
+
+  for (let i = 0; i < negativeArr.length; i++) {
+    negativeArr[i] = negativeArr[i] * -1;
+  }
+
+  roundNumsInArr(positiveArr);
+  roundNumsInArr(negativeArr);
+
+  limitNumsTo255(positiveArr);
+  limitNumsTo255(negativeArr);
+
+  /*console.log("pos");
+  console.dir(positiveArr, { maxArrayLength: null });
+
+  console.log("neg");
+  console.dir(negativeArr, { maxArrayLength: null });*/
+  return res
+    .status(201)
+    .json({ positiveArr: positiveArr, negativeArr: negativeArr });
+};
+
+// Compress data and send to supabase
+
+/* RV =>
+
+COMPRESS PROCESSED DATA
+    Get processed data(two arrays)
+    get data from supabase
+    decompress supabase data into 2 arrays(positive and negative)
+    push back the 2 local arrays to supabase data
+    compress using algorithm
+    update the values in table user route
+
+DECOMPRESS DATA
+    Get data from parameter
+    decompress using algorithm
+
+MAKE ROUTE FOR GETTING THE DATA FROM SUPABASE
+*/
+
+/* NRS =>
+
+MAKE ROUTE FOR GETTING DATA FROM ESP AND SENDING IT TO WEB FOR REAL TIME DISPLAY
+ */

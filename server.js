@@ -18,6 +18,24 @@ if (process.env.NODE_ENV === 'production') {
 
 const app = express();
 
+app.use('/uploads/objects', (req, res, next) => {
+  const filePath = req.path.toLowerCase();
+  if (filePath.endsWith('.obj') || filePath.endsWith('.mtl')) {
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', 'inline');
+  }
+  // Add texture file handling
+  else if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
+    res.setHeader('Content-Type', 'image/jpeg');
+    res.setHeader('Content-Disposition', 'inline');
+  }
+  else if (filePath.endsWith('.png')) {
+    res.setHeader('Content-Type', 'image/png');
+    res.setHeader('Content-Disposition', 'inline');
+  }
+  next();
+});
+
 app.use(cors());
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));

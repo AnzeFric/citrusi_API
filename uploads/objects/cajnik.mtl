@@ -1,0 +1,33 @@
+# Blender MTL File: 'cajnik.blend'
+# Material Count: 3
+
+newmtl keramika-bela
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 1.000000 1.000000 1.000000
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl keramika-modra
+Ns 225.000000
+Ka 1.000000 1.000000 1.000000
+Kd 0.007689 0.800000 0.549601
+Ks 0.500000 0.500000 0.500000
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+
+newmtl vrtnica-bgmaterial
+Ns 225.000000
+Ka textures\color.jpg
+Kd textures\color.jpg
+Ks textures\color.jpg
+Ke 0.000000 0.000000 0.000000
+Ni 1.450000
+d 1.000000
+illum 2
+map_Kd .

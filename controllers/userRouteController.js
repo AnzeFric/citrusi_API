@@ -141,7 +141,13 @@ function limitNumsTo255(arr) {
   }
 }
 
-// Get and process input data from gyro
+// Compress data from param
+function compress(arr) {}
+
+// Get data from database
+function fetchData() {}
+
+// Get and process input data from gyro and send it to database
 exports.sendGyroDataToApi = async (req, res) => {
   // TODO: Get data from param
 
@@ -171,31 +177,32 @@ exports.sendGyroDataToApi = async (req, res) => {
 
   console.log("neg");
   console.dir(negativeArr, { maxArrayLength: null });*/
-  return res
-    .status(201)
-    .json({ positiveArr: positiveArr, negativeArr: negativeArr });
+
+  // Fetch data from supabase
+
+  // Decompress data from supabase (2 arr)
+
+  // Append new data (positiveArr and negativeArr) to fetched
+
+  // Compress (2 arr)
+
+  // Send and overwrite data in supabase (2 arr)
+
+  return res.status(201);
 };
 
-// Compress data and send to supabase
+// Decompress data from param
+function decompress(data) {}
 
-/* RV =>
+// Get data from compressed data from database, decompress it and send to user
+exports.getGyroDataFromApi = async (req, res) => {
+  // Get data from supabase
+  // Decompress data(2 arr: positive and negative)
+  // Return json res with data
+};
 
-COMPRESS PROCESSED DATA
-    Get processed data(two arrays)
-    get data from supabase
-    decompress supabase data into 2 arrays(positive and negative)
-    push back the 2 local arrays to supabase data
-    compress using algorithm
-    update the values in table user route
-
-DECOMPRESS DATA
-    Get data from parameter
-    decompress using algorithm
-
-MAKE ROUTE FOR GETTING THE DATA FROM SUPABASE
-*/
-
-/* NRS =>
-
-MAKE ROUTE FOR GETTING DATA FROM ESP AND SENDING IT TO WEB FOR REAL TIME DISPLAY
- */
+// Get data from gyro and forward it for real time display on web
+exports.sendGyroDataToWeb = async (req, res) => {
+  // Get data from param
+  // Send pure data in json res 201 without processing to web for real time display if successful else 500
+};

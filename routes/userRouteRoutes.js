@@ -25,9 +25,20 @@ module.exports = (supabase) => {
     userRouteController.delete(req, res, supabase)
   );
 
-  // Send data from gyro to api
+  // Send data from gyro to api to save on database
   router.get("/sendGyroDataToApi", (req, res) =>
     userRouteController.sendGyroDataToApi(req, res)
   );
+
+  // Get data from database
+  router.get("/getGyroDataFromApi", (req, res) =>
+    userRouteController.getGyroDataFromApi(req, res)
+  );
+
+  // Send data from gyro to web
+  router.post("/sendGyroDataToWeb", (req, res) =>
+    userRouteController.sendGyroDataToWeb(req, res)
+  );
+
   return router;
 };

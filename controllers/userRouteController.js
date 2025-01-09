@@ -1,6 +1,8 @@
 /*
  * userRouteController.js
  */
+const Compress = require("./Compression");
+const Decompress = require("./Decompression");
 
 // Display all user routes
 exports.list = async (req, res, supabase) => {
@@ -186,6 +188,9 @@ exports.sendGyroDataToApi = async (req, res) => {
 
   // Compress (2 arr)
 
+  //const compressedPositive = Compress.compress(positiveArr);
+  //const compressedNegative = Compress.compress(negativeArr);
+
   // Send and overwrite data in supabase (2 arr)
 
   return res.status(201);
@@ -198,6 +203,8 @@ function decompress(data) {}
 exports.getGyroDataFromApi = async (req, res) => {
   // Get data from supabase
   // Decompress data(2 arr: positive and negative)
+  //const decompressedPositive = Decompress.decompress(compressedPositive);
+  //const decompressedNegative = Decompress.decompress(compressedNegative);
   // Return json res with data
 };
 

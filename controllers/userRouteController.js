@@ -141,72 +141,82 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
 
 // Help function to process and save the data
 async function processAndSaveData(data, userRouteId, supabase) {
-  let positiveArr = [];
-  let negativeArr = [];
+  // Helper functions
+  const processNumbers = (numbers) => {
+    const { positive, negative } = numbers.reduce(
+      (acc, num) => {
+        if (num >= 0) {
+          acc.positive.push(num);
+        } else {
+          acc.negative.push(Math.abs(num));
+        }
+        return acc;
+      },
+      { positive: [], negative: [] }
+    );
 
-  data.forEach((num) => {
-    if (num >= 0) {
-      positiveArr.push(num);
-    } else {
-      negativeArr.push(num);
-    }
-  });
+    return {
+      positive: limitNumsTo255(roundNumsInArr(positive)),
+      negative: limitNumsTo255(roundNumsInArr(negative)),
+    };
+  };
 
-  for (let i = 0; i < negativeArr.length; i++) {
-    negativeArr[i] = negativeArr[i] * -1;
-  }
-
-  roundNumsInArr(positiveArr);
-  roundNumsInArr(negativeArr);
-
-  limitNumsTo255(positiveArr);
-  limitNumsTo255(negativeArr);
-
-  try {
-    // Fetch existing data from supabase
-    const { data: existingData, error } = await supabase
+  const fetchExistingGyroData = async (userRouteId) => {
+    const { data, error } = await supabase
       .from("USER_ROUTE")
       .select("gyro_data")
       .eq("id_user_route", userRouteId)
       .single();
 
     if (error) {
-      console.error("Error fetching data:", error);
-      return;
+      throw new Error(`Error fetching data: ${error.message}`);
     }
 
-    // Decompress existing data
-    const decompressedPositive = existingData
-      ? Decompress.decompress(existingData.gyro_data.compressedPositive)
-      : [];
-    const decompressedNegative = existingData
-      ? Decompress.decompress(existingData.gyro_data.compressedNegative)
-      : [];
+    return data?.gyro_data;
+  };
 
-    // Append new data
-    decompressedPositive.push(...positiveArr);
-    decompressedNegative.push(...negativeArr);
-
-    // Compress
-    const compressedPositive = Compress.compress(decompressedPositive);
-    const compressedNegative = Compress.compress(decompressedNegative);
-
-    // Update database
-    const { error: updateError } = await supabase
+  const updateGyroData = async (userRouteId, gyroData) => {
+    const { error } = await supabase
       .from("USER_ROUTE")
-      .update({
-        gyro_data: {
-          compressedPositive: String(compressedPositive),
-          compressedNegative: String(compressedNegative),
-        },
-      })
+      .update({ gyro_data: gyroData })
       .eq("id_user_route", userRouteId);
 
-    if (updateError) {
-      console.error("Error updating data:", updateError);
+    if (error) {
+      throw new Error(`Error updating data: ${error.message}`);
     }
+  };
+
+  try {
+    // Process new data
+    const { positive, negative } = processNumbers(data);
+
+    // Prepare final data for storage
+    let finalPositive = positive;
+    let finalNegative = negative;
+
+    // If we have existing data, merge it with new data
+    const existingData = await fetchExistingGyroData(userRouteId);
+    if (existingData?.compressedPositive) {
+      finalPositive = [
+        ...Decompress.decompress(existingData.compressedPositive),
+        ...positive,
+      ];
+      finalNegative = [
+        ...Decompress.decompress(existingData.compressedNegative),
+        ...negative,
+      ];
+    }
+
+    // Prepare and save final compressed data
+    const gyroData = {
+      compressedPositive: String(Compress.compress(finalPositive)),
+      compressedNegative: String(Compress.compress(finalNegative)),
+    };
+
+    await updateGyroData(userRouteId, gyroData);
   } catch (error) {
-    console.error("Processing error:", error);
+    console.error("Failed to process and save data:", error);
+    throw error; // Re-throw to allow caller to handle the error
   }
 }
 
@@ -227,6 +237,13 @@ exports.getGyroDataFromApi = async (req, res, supabase) => {
 
     if (!data) {
       return res.status(404).json({ error: "Data not found" });
+    }
+
+    if (data.gyro_data == null) {
+      return res.status(200).json({
+        message: "Data was not yet added, empty",
+        data: { positiveArr: [], negativeArr: [] },
+      });
     }
 
     // Decompress data from supabase

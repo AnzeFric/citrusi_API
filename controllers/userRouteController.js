@@ -141,23 +141,29 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
   //preverim ali je vec kot 3 minute od prve meritve
   if (currentTime - firstTime >= TIME_WINDOW_MS) {
     try {
-
       //proesiram in shranim podatke
-      await processAndSaveData(deviceId, deviceBuffers.get(deviceId), firstTime, supabase);
+      await processAndSaveData(
+        deviceId,
+        deviceBuffers.get(deviceId),
+        firstTime,
+        supabase
+      );
 
       //izbrisem buffer
       deviceBuffers.delete(deviceId);
 
       return res.status(200).json({
         message: "Podatki so bili obdelani in shranjeni",
-        processedCount: deviceBuffers.get(deviceId).length
+        processedCount: deviceBuffers.get(deviceId).length,
       });
-
     } catch (error) {
-      console.error(`Napaka pri procesiranju bufferja za napravo ${deviceId}:`, error);
+      console.error(
+        `Napaka pri procesiranju bufferja za napravo ${deviceId}:`,
+        error
+      );
       return res.status(500).json({
         error: "Failed to process data",
-        details: error.message
+        details: error.message,
       });
     }
   }
@@ -167,11 +173,9 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
 
   return res.status(200).json({
     message: "Podatki dodani v buffer",
-    bufferedCount: deviceBuffers.get(deviceId).length
+    bufferedCount: deviceBuffers.get(deviceId).length,
   });
 };
-
-
 
 // Help function to process and save the data
 async function processAndSaveData(data, userRouteId, supabase) {
@@ -269,11 +273,7 @@ exports.getGyroDataFromApi = async (req, res, supabase) => {
       return res.status(500).json({ error: "Error fetching data" });
     }
 
-    if (!data) {
-      return res.status(404).json({ error: "Data not found" });
-    }
-
-    if (data.gyro_data == null) {
+    if (!data.gyro_data) {
       return res.status(200).json({
         message: "Data was not yet added, empty",
         data: { positiveArr: [], negativeArr: [] },

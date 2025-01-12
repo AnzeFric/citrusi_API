@@ -111,33 +111,67 @@ function limitNumsTo255(arr) {
   }
 }
 
-const dataBuffers = new Map(); // Map to store buffers for different routes
-const COLLECTION_TIME = 3 * 60 * 1000; // 3 minutes in milliseconds
+const deviceBuffers = new Map();
+const deviceFirstMeasurementTime = new Map();
+const TIME_WINDOW_MS = 3 * 60 * 1000;
 
-// Get and process input data from gyro and send it to database
+// pridobi podatke iz naprave, shranjuje 3 minute nato obdela in shrani v bazo
 exports.sendGyroDataToApi = async (req, res, supabase) => {
-  const { userRouteId, data } = req.body;
+  const { deviceId, gyro } = req.body;
+  console.log(req.body);
+  let measurement = gyro;
 
-  // Initialize buffer for this route if it doesn't exist
-  if (!dataBuffers.has(userRouteId)) {
-    dataBuffers.set(userRouteId, {
-      buffer: [],
-      timer: setTimeout(async () => {
-        // Process data after 3 minutes
-        const bufferedData = dataBuffers.get(userRouteId).buffer;
-        await processAndSaveData(bufferedData, userRouteId, supabase);
-        // Clear the buffer
-        dataBuffers.delete(userRouteId);
-      }, COLLECTION_TIME),
+  const currentTime = Date.now();
+  console.log("novi podatki: ", gyro);
+
+  //nova naprava posilja, pripravim nov buffer
+  if (!deviceBuffers.has(deviceId)) {
+    deviceBuffers.set(deviceId, []);
+    deviceFirstMeasurementTime.set(deviceId, currentTime);
+    deviceBuffers.get(deviceId).push(measurement);
+
+    return res.status(200).json({
+      message: "Prvi podatek dodan v buffer",
     });
   }
 
-  // Add new data to buffer
-  dataBuffers.get(userRouteId).buffer.push(...data);
+  //preverim kdaj je bila poslana prva meritev
+  const firstTime = deviceFirstMeasurementTime.get(deviceId);
 
-  // Send immediate response that data was received
-  return res.status(200).json({ message: "Data received and buffering" });
+  //preverim ali je vec kot 3 minute od prve meritve
+  if (currentTime - firstTime >= TIME_WINDOW_MS) {
+    try {
+
+      //proesiram in shranim podatke
+      await processAndSaveData(deviceId, deviceBuffers.get(deviceId), firstTime, supabase);
+
+      //izbrisem buffer
+      deviceBuffers.delete(deviceId);
+
+      return res.status(200).json({
+        message: "Podatki so bili obdelani in shranjeni",
+        processedCount: deviceBuffers.get(deviceId).length
+      });
+
+    } catch (error) {
+      console.error(`Napaka pri procesiranju bufferja za napravo ${deviceId}:`, error);
+      return res.status(500).json({
+        error: "Failed to process data",
+        details: error.message
+      });
+    }
+  }
+
+  //ce je manj kot 3 minute samo dodam v buffer
+  deviceBuffers.get(deviceId).push(measurement);
+
+  return res.status(200).json({
+    message: "Podatki dodani v buffer",
+    bufferedCount: deviceBuffers.get(deviceId).length
+  });
 };
+
+
 
 // Help function to process and save the data
 async function processAndSaveData(data, userRouteId, supabase) {

@@ -26,7 +26,7 @@ module.exports = (supabase) => {
   );
 
   // Send data from gyro to api to save on database
-  router.get("/sendGyroDataToApi", (req, res) =>
+  router.post("/add-gyro-measurement", (req, res) =>
     userRouteController.sendGyroDataToApi(req, res, supabase)
   );
 

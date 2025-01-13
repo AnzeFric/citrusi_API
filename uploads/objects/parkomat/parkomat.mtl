@@ -1,0 +1,5 @@
+newmtl Material
+map_Kd textures/color.jpg
+norm textures/normal.jpg
+map_ao textures/occlusion.jpg
+Pr 1.00

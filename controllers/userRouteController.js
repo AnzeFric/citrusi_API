@@ -117,18 +117,29 @@ const TIME_WINDOW_MS = 3 * 60 * 1000;
 
 // pridobi podatke iz naprave, shranjuje 3 minute nato obdela in shrani v bazo
 exports.sendGyroDataToApi = async (req, res, supabase) => {
-  const { deviceId, gyro } = req.body;
+  const { deviceId, measurements } = req.body;
   console.log(req.body);
-  let measurement = Number(gyro);
+
+  if (!Array.isArray(measurements)) {
+    return res.status(400).json({
+      error: "Napacen format podatkov",
+      details: "Meritve morajo bti v obliki polja",
+    });
+  }
+
+  // let measurement = Number(gyro);
+  const validMeasurements = measurements
+    .map(m => Number(m))
+    .filter(m => !isNaN(m));
 
   const currentTime = Date.now();
-  console.log("novi podatki: ", gyro);
+  console.log("novi podatki: ", validMeasurements);
 
   //nova naprava posilja, pripravim nov buffer
   if (!deviceBuffers.has(deviceId)) {
     deviceBuffers.set(deviceId, []);
     deviceFirstMeasurementTime.set(deviceId, currentTime);
-    deviceBuffers.get(deviceId).push(measurement);
+    deviceBuffers.get(deviceId).push(...validMeasurements);
 
     return res.status(200).json({
       message: "Prvi podatek dodan v buffer",
@@ -141,16 +152,30 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
   //preverim ali je vec kot 3 minute od prve meritve
   if (currentTime - firstTime >= TIME_WINDOW_MS) {
     try {
+
+      const buffer = deviceBuffers.get(deviceId);
       //proesiram in shranim podatke
+
+      if (!buffer || !Array.isArray(buffer)) {
+        throw new Error(`Napacen buffer za napravo ${deviceId}`);
+      }
+
+
+      if (buffer.length > 1) {
+        throw new Error(`Prazen buffer za napravo ${deviceId}`);
+      }
+
       await processAndSaveData(
         deviceId,
-        deviceBuffers.get(deviceId),
+        buffer,
         firstTime,
         supabase
       );
 
+
       //izbrisem buffer
       deviceBuffers.delete(deviceId);
+      deviceFirstMeasurementTime.delete(deviceId);
 
       return res.status(200).json({
         message: "Podatki so bili obdelani in shranjeni",
@@ -161,6 +186,10 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
         `Napaka pri procesiranju bufferja za napravo ${deviceId}:`,
         error
       );
+
+      deviceBuffers.delete(deviceId);
+      deviceFirstMeasurementTime.delete(deviceId);
+
       return res.status(500).json({
         error: "Failed to process data",
         details: error.message,
@@ -169,7 +198,7 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
   }
 
   //ce je manj kot 3 minute samo dodam v buffer
-  deviceBuffers.get(deviceId).push(measurement);
+  deviceBuffers.get(deviceId).push(...validMeasurements);
 
   return res.status(200).json({
     message: "Podatki dodani v buffer",

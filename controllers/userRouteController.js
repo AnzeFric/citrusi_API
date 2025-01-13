@@ -119,7 +119,7 @@ const TIME_WINDOW_MS = 3 * 60 * 1000;
 exports.sendGyroDataToApi = async (req, res, supabase) => {
   const { deviceId, gyro } = req.body;
   console.log(req.body);
-  let measurement = gyro;
+  let measurement = Number(gyro);
 
   const currentTime = Date.now();
   console.log("novi podatki: ", gyro);

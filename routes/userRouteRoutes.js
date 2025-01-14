@@ -35,5 +35,10 @@ module.exports = (supabase) => {
     userRouteController.getGyroDataFromApi(req, res, supabase)
   );
 
+  // Get step count
+  router.get("/getStepCount/:id", (req, res) =>
+    userRouteController.getStepCount(req, res, supabase)
+  );
+
   return router;
 };

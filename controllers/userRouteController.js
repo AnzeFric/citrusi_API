@@ -129,8 +129,8 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
 
   // let measurement = Number(gyro);
   const validMeasurements = measurements
-    .map(m => Number(m))
-    .filter(m => !isNaN(m));
+    .map((m) => Number(m))
+    .filter((m) => !isNaN(m));
 
   const currentTime = Date.now();
   console.log("novi podatki: ", validMeasurements);
@@ -152,7 +152,6 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
   //preverim ali je vec kot 3 minute od prve meritve
   if (currentTime - firstTime >= TIME_WINDOW_MS) {
     try {
-
       const buffer = deviceBuffers.get(deviceId);
       //proesiram in shranim podatke
 
@@ -160,18 +159,11 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
         throw new Error(`Napacen buffer za napravo ${deviceId}`);
       }
 
-
       if (buffer.length > 1) {
         throw new Error(`Prazen buffer za napravo ${deviceId}`);
       }
 
-      await processAndSaveData(
-        deviceId,
-        buffer,
-        firstTime,
-        supabase
-      );
-
+      await processAndSaveData(deviceId, buffer, firstTime, supabase);
 
       //izbrisem buffer
       deviceBuffers.delete(deviceId);
@@ -324,6 +316,58 @@ exports.getGyroDataFromApi = async (req, res, supabase) => {
         positiveArr: decompressedPositive,
         negativeArr: decompressedNegative,
       },
+    });
+  } catch (error) {
+    throw error;
+  }
+};
+
+// Get compressed data from database, decompress, go through data and return step count
+exports.getStepCount = async (req, res, supabase) => {
+  const userRouteId = req.params.id;
+  try {
+    // Fetch data from supabase
+    const { data: data, error } = await supabase
+      .from("USER_ROUTE")
+      .select("gyro_data")
+      .eq("id_user_route", userRouteId)
+      .single();
+
+    if (error) {
+      return res.status(500).json({ error: "Error fetching data" });
+    }
+
+    if (!data.gyro_data) {
+      return res.status(200).json({
+        message: "Data was not yet added, empty",
+        data: { positiveArr: [], negativeArr: [] },
+      });
+    }
+
+    // Decompress data from supabase
+    var decompressedPositive = Decompress.decompress(
+      data.gyro_data.compressedPositive
+    );
+    var decompressedNegative = Decompress.decompress(
+      data.gyro_data.compressedNegative
+    );
+
+    let count = 0;
+    decompressedPositive.forEach((num) => {
+      if (num > 20) {
+        count++;
+      }
+    });
+    decompressedNegative.forEach((num) => {
+      if (num > 20) {
+        count++;
+      }
+    });
+
+    // Return step count with message
+    return res.status(200).json({
+      message: "Steps counted successfully",
+      stepCount: count,
     });
   } catch (error) {
     throw error;

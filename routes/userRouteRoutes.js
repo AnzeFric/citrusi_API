@@ -36,7 +36,7 @@ module.exports = (supabase) => {
   );
 
   // Get step count
-  router.get("/getStepCount/:id", (req, res) =>
+  router.get("/get-step-count/:id", (req, res) =>
     userRouteController.getStepCount(req, res, supabase)
   );
 

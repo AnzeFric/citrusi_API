@@ -101,6 +101,8 @@ function roundNumsInArr(arr) {
   for (let i = 0; i < arr.length; i++) {
     arr[i] = Math.round(arr[i]);
   }
+
+  return arr;
 }
 
 function limitNumsTo255(arr) {
@@ -109,11 +111,13 @@ function limitNumsTo255(arr) {
       arr[i] = 255;
     }
   }
+
+  return arr;
 }
 
 const deviceBuffers = new Map();
 const deviceFirstMeasurementTime = new Map();
-const TIME_WINDOW_MS = 3 * 60 * 1000;
+const TIME_WINDOW_MS = 1 * 60 * 1000;
 
 // pridobi podatke iz naprave, shranjuje 3 minute nato obdela in shrani v bazo
 exports.sendGyroDataToApi = async (req, res, supabase) => {
@@ -159,19 +163,18 @@ exports.sendGyroDataToApi = async (req, res, supabase) => {
         throw new Error(`Napacen buffer za napravo ${deviceId}`);
       }
 
-      if (buffer.length > 1) {
+      if (buffer.length < 1) {
         throw new Error(`Prazen buffer za napravo ${deviceId}`);
       }
 
-      await processAndSaveData(deviceId, buffer, firstTime, supabase);
+      await processAndSaveData(buffer, deviceId, supabase);
 
       //izbrisem buffer
       deviceBuffers.delete(deviceId);
       deviceFirstMeasurementTime.delete(deviceId);
 
       return res.status(200).json({
-        message: "Podatki so bili obdelani in shranjeni",
-        processedCount: deviceBuffers.get(deviceId).length,
+        message: "Podatki so bili obdelani in shranjeni"
       });
     } catch (error) {
       console.error(
